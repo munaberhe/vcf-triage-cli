@@ -1,24 +1,29 @@
 """
-VCF Triage CLI (from scratch; whitespace-robust)
+VCF Triage CLI (whitespace-robust) + --genes allowlist
+
 Filters a single-sample VCF by:
   - PASS (unless --include-nonpass)
   - QUAL (>= --min-qual)
   - Depth DP (>= --min-dp)
-  - Population AF (< --max-af) when AF exists
+  - Population AF (< --max-af) when AF exists in INFO
   - Allele balance for hets (0.3–0.7) when AD exists
+  - Optional gene allowlist via --genes (keep only listed genes)
 
 Also extracts basic VEP ANN fields (gene, consequence, HGVS c./p.).
 
 Usage:
   python -m src.vcf_triage --vcf data/sample.vcf --out out.csv
+  python -m src.vcf_triage --vcf data/sample.vcf --out out.csv --genes data/keep_genes.txt
 """
+
+from __future__ import annotations
 
 import argparse
 import csv
 import gzip
 import io
 import re
-from typing import Dict, Iterator, Optional, Tuple
+from typing import Dict, Iterator, Optional, Tuple, Set
 
 
 def open_text_auto(path: str):
@@ -114,8 +119,9 @@ def triage(
     min_qual: float = 30.0,
     max_af: float = 0.01,
     include_nonpass: bool = False,
+    genes_set: Optional[Set[str]] = None,
 ) -> bool:
-    """Core filtering + CSV writer."""
+    """Core filtering + CSV writer (with optional gene allowlist)."""
     cols = ["chrom", "pos", "ref", "alt", "gene", "consequence", "hgvs_c", "hgvs_p", "af", "gt", "dp", "ab", "filters"]
     with open(out_csv, "w", newline="") as f:
         w = csv.writer(f)
@@ -147,6 +153,12 @@ def triage(
                 continue
 
             gene, consequence, hgvsc, hgvsp = parse_ann(info)  # type: ignore
+
+            # NEW: gene allowlist—keep only if gene in provided set
+            if genes_set is not None:
+                if not gene or gene not in genes_set:
+                    continue
+
             for alt in rec["ALT"]:  # type: ignore
                 w.writerow(
                     [
@@ -176,9 +188,15 @@ def main():
     ap.add_argument("--min-qual", type=float, default=30.0, help="Minimum QUAL to keep a site")
     ap.add_argument("--max-af", type=float, default=0.01, help="Maximum allele frequency (AF) if present in INFO")
     ap.add_argument("--include-nonpass", action="store_true", help="Include sites where FILTER != PASS")
+    ap.add_argument("--genes", help="File of genes to keep (one per line)")  # <-- NEW
     args = ap.parse_args()
 
-    triage(args.vcf, args.out, args.min_dp, args.min_qual, args.max_af, args.include_nonpass)
+    genes_set: Optional[Set[str]] = None
+    if args.genes:
+        with open(args.genes) as gf:
+            genes_set = {line.strip() for line in gf if line.strip()}
+
+    triage(args.vcf, args.out, args.min_dp, args.min_qual, args.max_af, args.include_nonpass, genes_set)
 
 
 if __name__ == "__main__":
