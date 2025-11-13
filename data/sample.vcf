@@ -1,0 +1,12 @@
+##fileformat=VCFv4.2
+##INFO=<ID=AF,Number=A,Type=Float,Description="Allele Frequency">
+##INFO=<ID=ANN,Number=.,Type=String,Description="VEP annotation">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Allelic depths for ref/alt">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth">
+#CHROM  POS   ID  REF ALT QUAL FILTER INFO                                   FORMAT      sample1
+1       1000  .   A   G   50   PASS  AF=0.005;ANN=G|missense_variant|MOD|GENE1|||||c.100A>G|p.Lys34Arg GT:AD:DP   0/1:20,18:38
+1       2000  .   C   T   10   PASS  AF=0.001;ANN=T|synonymous_variant|LOW|GENE2|||||c.200C>T|p.Gly67Gly GT:AD:DP  0/1:3,2:5
+1       3000  .   G   A   60   q10  AF=0.02;ANN=A|missense_variant|MOD|GENE3|||||c.300G>A|p.Val100Met  GT:AD:DP   0/1:12,12:24
+1       4000  .   T   C   70   PASS  AF=0.6;ANN=C|missense_variant|MOD|GENE4|||||c.400T>C|p.Ile134Thr  GT:AD:DP   0/1:30,20:50
+
