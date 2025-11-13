@@ -1,5 +1,5 @@
 """
-VCF Triage CLI (whitespace-robust) + --genes allowlist
+VCF Triage CLI (whitespace-robust) + --genes allowlist + --summary report
 
 Filters a single-sample VCF by:
   - PASS (unless --include-nonpass)
@@ -13,17 +13,15 @@ Also extracts basic VEP ANN fields (gene, consequence, HGVS c./p.).
 
 Usage:
   python -m src.vcf_triage --vcf data/sample.vcf --out out.csv
-  python -m src.vcf_triage --vcf data/sample.vcf --out out.csv --genes data/keep_genes.txt
+  python -m src.vcf_triage --vcf data/sample.vcf --out out.csv --genes data/keep_genes.txt --summary summary.txt
 """
-
-from __future__ import annotations
 
 import argparse
 import csv
 import gzip
 import io
 import re
-from typing import Dict, Iterator, Optional, Tuple, Set
+from typing import Dict, Iterator, Optional, Set, Tuple
 
 
 def open_text_auto(path: str):
@@ -120,9 +118,13 @@ def triage(
     max_af: float = 0.01,
     include_nonpass: bool = False,
     genes_set: Optional[Set[str]] = None,
+    summary_path: Optional[str] = None,
 ) -> bool:
-    """Core filtering + CSV writer (with optional gene allowlist)."""
+    """Core filtering + CSV writer (with optional gene allowlist and summary)."""
     cols = ["chrom", "pos", "ref", "alt", "gene", "consequence", "hgvs_c", "hgvs_p", "af", "gt", "dp", "ab", "filters"]
+    kept = 0
+    by_consequence: Dict[str, int] = {}
+
     with open(out_csv, "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(cols)
@@ -154,7 +156,7 @@ def triage(
 
             gene, consequence, hgvsc, hgvsp = parse_ann(info)  # type: ignore
 
-            # NEW: gene allowlist—keep only if gene in provided set
+            # Gene allowlist—keep only if gene in provided set
             if genes_set is not None:
                 if not gene or gene not in genes_set:
                     continue
@@ -177,6 +179,18 @@ def triage(
                         flt,
                     ]
                 )
+                kept += 1
+                if consequence:
+                    by_consequence[consequence] = by_consequence.get(consequence, 0) + 1
+
+    if summary_path:
+        with open(summary_path, "w") as s:
+            s.write(f"Kept variants: {kept}\n")
+            if by_consequence:
+                s.write("By consequence:\n")
+                for k, v in sorted(by_consequence.items(), key=lambda x: (-x[1], x[0])):
+                    s.write(f"  {k}: {v}\n")
+
     return True
 
 
@@ -188,7 +202,8 @@ def main():
     ap.add_argument("--min-qual", type=float, default=30.0, help="Minimum QUAL to keep a site")
     ap.add_argument("--max-af", type=float, default=0.01, help="Maximum allele frequency (AF) if present in INFO")
     ap.add_argument("--include-nonpass", action="store_true", help="Include sites where FILTER != PASS")
-    ap.add_argument("--genes", help="File of genes to keep (one per line)")  # <-- NEW
+    ap.add_argument("--genes", help="File of genes to keep (one per line)")
+    ap.add_argument("--summary", help="Write a small text summary to this path")
     args = ap.parse_args()
 
     genes_set: Optional[Set[str]] = None
@@ -196,7 +211,16 @@ def main():
         with open(args.genes) as gf:
             genes_set = {line.strip() for line in gf if line.strip()}
 
-    triage(args.vcf, args.out, args.min_dp, args.min_qual, args.max_af, args.include_nonpass, genes_set)
+    triage(
+        args.vcf,
+        args.out,
+        args.min_dp,
+        args.min_qual,
+        args.max_af,
+        args.include_nonpass,
+        genes_set,
+        args.summary,
+    )
 
 
 if __name__ == "__main__":
