@@ -1,9 +1,8 @@
 __pycache__/
 *.pyc
+.pytest_cache/
 .DS_Store
 .env
 .venv/
-*.swp
-.pytest_cache/
-.ipynb_checkpoints/
-
+out.csv
+summary.txt
