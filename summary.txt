@@ -1,3 +1,0 @@
-Kept variants: 1
-By consequence:
-  missense_variant: 1

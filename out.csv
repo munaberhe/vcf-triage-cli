@@ -1,2 +1,0 @@
-chrom,pos,ref,alt,gene,consequence,hgvs_c,hgvs_p,af,gt,dp,ab,filters
-1,1000,A,G,GENE1,missense_variant,p.Lys34Arg,,0.005,0/1,38,0.474,PASS
