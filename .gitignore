@@ -6,3 +6,13 @@ __pycache__/
 .venv/
 out.csv
 summary.txt
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+.env
+.venv/
+out.csv
+summary.txt
+igv_batch.txt
+igv_snapshots/
