@@ -193,6 +193,14 @@ _Add a small screenshot of `out.csv` here for recruiters._
 ```
 
 ---
+## IGV batch generation
+
+```bash
+# single BAM for all rows
+python -m src.igv_batch --csv out.csv \
+  --bam "/absolute/path/to/sample.bam" \
+  --out igv_batch.txt --genome GRCh38 --flank 100 \
+  --snapshot-dir igv_snapshots --snapshot-prefix triage
 
 ## Notes
 - VCF format: HTS/SAM spec  
